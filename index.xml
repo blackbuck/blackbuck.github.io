@@ -1,11 +1,50 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
-    <title>The Binary Bard</title>
+    <title>The Black Buck</title>
     <link>https://blackbuck.github.io/</link>
-    <description>Recent content on The Binary Bard</description>
-    <generator>Hugo -- 0.139.4</generator>
+    <description>Recent content on The Black Buck</description>
+    <generator>Hugo -- 0.140.2</generator>
     <language>en-us</language>
+    <lastBuildDate>Thu, 09 Jan 2025 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://blackbuck.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Parser Combinators</title>
+      <link>https://blackbuck.github.io/posts/parser-combinators/</link>
+      <pubDate>Thu, 09 Jan 2025 00:00:00 +0000</pubDate>
+      <guid>https://blackbuck.github.io/posts/parser-combinators/</guid>
+      <description>And the advent of combinatory parsing in go</description>
+    </item>
+    <item>
+      <title>Projects</title>
+      <link>https://blackbuck.github.io/projects/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://blackbuck.github.io/projects/</guid>
+      <description>&lt;h4 id=&#34;pcom-gohttpsgithubcomblackbuckpcom-go-golang&#34;&gt;&lt;a href=&#34;https://github.com/BlackBuck/pcom-go&#34;&gt;PCOM-GO&lt;/a&gt; &lt;code&gt;Golang&lt;/code&gt;&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;Built a parser combinator library in Go for constructing complex parsers.&lt;/li&gt;
+&lt;li&gt;Implemented core combinators like or, and, Many0, Seq, and Lazy for recursive parsing.&lt;/li&gt;
+&lt;li&gt;Added transformation features with ”Map” and flexible parsing using ”Between” combinators.&lt;/li&gt;
+&lt;li&gt;Conducted rigorous error handling, testing, and optimization for reliability and performance.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id=&#34;ai-vs-human-voice-recognizerhttpsgithubcomblackbuckdeepfake-audio-recognition-python-pytorch-librosa-numpy&#34;&gt;&lt;a href=&#34;https://github.com/BlackBuck/Deepfake-Audio-Recognition&#34;&gt;AI vs Human Voice Recognizer&lt;/a&gt; &lt;code&gt;Python, PyTorch, Librosa, Numpy&lt;/code&gt;&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;Built a classifier that distinguishes real audio from AI-generated.&lt;/li&gt;
+&lt;li&gt;Extracted MEL Spectrogram from audio and created a balanced dataset.&lt;/li&gt;
+&lt;li&gt;Compared various architectures like AlexNet, MobileNet, and ResNet against a simpler CNN.&lt;/li&gt;
+&lt;li&gt;Achieved a maximum accuracy of 99.7 % using early stopping and 5-fold cross-validation.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id=&#34;hisaab-kitaabhttpsgithubcomblackbuckhisaab-nextjs-reactjs-postgresql-nodejs&#34;&gt;&lt;a href=&#34;https://github.com/BlackBuck/hisaab&#34;&gt;Hisaab-Kitaab&lt;/a&gt; &lt;code&gt;NextJS, ReactJS, PostgreSQL, NodeJS&lt;/code&gt;&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;Built a daily expense tracker using React, NextJS, and PostgreSQL.&lt;/li&gt;
+&lt;li&gt;Implemented skeleton loading for better loading of UI and improved user experience.&lt;/li&gt;
+&lt;li&gt;Visualized the monthly expenses to improve usability.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id=&#34;self-learning-platformer-gamehttpsgithubcomblackbuckself-learning-runner-python-pygame&#34;&gt;&lt;a href=&#34;https://github.com/BlackBuck/Self-learning-runner/&#34;&gt;Self-learning Platformer Game&lt;/a&gt; &lt;code&gt;Python, PyGame&lt;/code&gt;&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;Designed and developed a platformer game.&lt;/li&gt;
+&lt;li&gt;Built a fully connected neural network (FCNN) from scratch to train the game to play autonomously.&lt;/li&gt;
+&lt;/ul&gt;</description>
+    </item>
   </channel>
 </rss>
