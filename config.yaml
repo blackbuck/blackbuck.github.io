@@ -1,0 +1,55 @@
+baseURL : 'https://blackbuck.github.io/'
+languageCode : 'en-us'
+title : 'The Black Buck'
+theme: "PaperMod"
+menu:
+  main:
+    - identifier: home
+      name: Home
+      url: /
+      weight: 10
+    - identifier: posts
+      name: Posts
+      url: /posts
+      weight: 20
+    - identifier: projects
+      name: Projects
+      url: /projects
+      weight: 30
+    - identifier: search
+      name: Search
+      url: /search
+      weight: 40
+
+params:
+  showBreadCrumbs: true
+  showCodeCopyButtons: true
+  hiddenMeta: false
+  showToc: true
+  TocOpen: true
+  
+  profileMode:
+    enabled: true
+    title: "Anil Bishnoi" 
+    subtitle: "Hey there 👋. I'm Anil Bishnoi. A pre-final computer engineering student at NIT Kurukshetra. I like to learn stuff. I also write (sometimes) :)"
+    imageUrl: "home/casual-pfp.jpeg"
+    # imageTitle: "<title of image as alt>"
+    imageWidth: 120 
+    imageHeight: 120 
+    
+    
+  socialIcons:
+    - name: "email"
+      url: "mailto:anilkumarpanwar2929@gmail.com"
+    - name: "linkedin"
+      url: "https://www.linkedin.com/in/abdurrahmankalim"
+    - name: "github"
+      url: "https://github.com/BlackBuck"
+    - name: "medium"
+      url: "https://medium.com/@un.eel"
+
+outputs:
+  home:
+    - HTML
+    - RSS
+    - JSON # necessary for search
