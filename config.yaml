@@ -18,6 +18,7 @@ menu:
       weight: 30
 
 params:
+  math: true
   showBreadCrumbs: true
   showCodeCopyButtons: true
   hiddenMeta: false

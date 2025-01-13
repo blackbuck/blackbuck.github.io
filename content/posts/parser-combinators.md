@@ -3,6 +3,7 @@ title = "Parser Combinators"
 description = "and the Chamber of Functional Programming"
 date = 2025-01-13
 author = "Anil Bishnoi"
+math = true
 +++
 
 # The Call to Adventure
@@ -26,10 +27,10 @@ So, before moving to combining parsers, we need to define what a parser should b
 
 $$
 f(input, x, i) = \left\lbrace
-	\begin{array}{ll}
-		\brace  & if i \gt len(input) \\
-		i + 1 & if input[i] = x \\
-		\brace & otherwise
+	\begin{array}{lll}
+		\brace  && if i \gt len(input) \newline
+		{i + 1} && if input[i] = x \newline
+		\brace && otherwise \newline
 	\end{array}
 \right.
 $$
