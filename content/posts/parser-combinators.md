@@ -25,13 +25,13 @@ Basically, a parser combinator is a function that takes one or more functions as
 So, before moving to combining parsers, we need to define what a parser should be able to do. Mathematically, a parser is a function `f` that takes an `input` a recognizer `x` and an index `i` and produces an output such that:
 
 $$
-f(input, x, i) = \left\{
+f(input, x, i) = \left\lbrace
 	\begin{array}{ll}
 		\brace  & if i \gt len(input) \\
 		i + 1 & if input[i] = x \\
 		\brace & otherwise
 	\end{array}
-\right\}
+\right.
 $$
 
 # The Dark Arts of Parsing
@@ -49,7 +49,7 @@ type Parser[T any] interface {
 }
 ```
 
-This is what I thought as well. But the problem with defining `Result` and `Parser` with generics is that dealing with generics became a whole lot complex and was causing issues with the testing (handling [`DeepEqual`]([reflect package - reflect - Go Packages](https://pkg.go.dev/reflect#DeepEqual)) was a headache on its own.) There was also a different problem: I wasn't considering the input as a state machine. Although it wasn't that big of a performance bottleneck (I haven't benchmarked it against the second version) but I just didn't like passing a string around too much. I now had two problems to deal with:
+This is what I thought as well. But the problem with defining `Result` and `Parser` with generics is that dealing with generics became a whole lot complex and was causing issues with the testing (handling [`DeepEqual`](https://pkg.go.dev/reflect#DeepEqual) was a headache on its own.) There was also a different problem: I wasn't considering the input as a state machine. Although it wasn't that big of a performance bottleneck (I haven't benchmarked it against the second version) but I just didn't like passing a string around too much. I now had two problems to deal with:
 1. Redefine `Parser` and `Result`
 2. Implement a state machine.
 
