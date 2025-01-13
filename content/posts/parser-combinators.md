@@ -31,7 +31,7 @@ f(input, x, i) = \left\{
 		i + 1 & if input[i] = x \\
 		\brace & otherwise
 	\end{array}
-\right.
+\right\}
 $$
 
 # The Dark Arts of Parsing
