@@ -7,11 +7,11 @@ author = "Anil Bishnoi"
 
 # The Call to Adventure
 
- **<mark style="background: #FFF3A3A6;">Skip this if you're here just for the parser combinattor part :)</mark>**
+ **<mark style="background: #FFF3A3A6;">Skip this if you're here just for the parser generator part :)</mark>**
  
  If I had a list of disappointments for the year 2025, the first entry would be my college not offering the Compiler Design course in 6th semester. I mean, why shouldn't they? So what if they've clearly stated in the scheme that they'll be offering it in the 8th semester? Unable to digest the fact that I wasn't in 8th semester already, I decided to do something myself. And so, I started learning how to make my own compiler. To my surprise, it wasn't an easy task. Most "tutorials" on compiler design just sort of skip on the most basic phase: building a lexer and a parser. For the sake of "simplicity," they instead focus on more important tasks at hand. It was indeed disheartening. I mean, what's the point of learning something if I don't even know how it is supposed to work.
 
-And so, I did. I got together a simple lexer and parser and made it to spit out a parse tree. But that was it. All that rage for nothing. A day or two later, I stumbled upon a Wikipedia article on parser combinators (I don't know how I got there)
+And so, I did. I got together a simple lexer and parser and made it to spit out a parse tree. But that was it. All that rage for nothing. A day or two later, I stumbled upon a Wikipedia article on parser generators (I don't know how I got there)
 
 If I had a list for all the interesting things that happened to me in the year 2025, the first entry would be the discovery of parser combinators.
 
@@ -23,19 +23,20 @@ According to Wikipedia,
 Basically, a parser combinator is a function that takes one or more functions as parameters and returns a function combining these functions. In this context, these functions are supposed to be parsers. Parser combinators are a great tool for prototyping compilers for domain-specific tasks. More of it on later sections.
 
 So, before moving to combining parsers, we need to define what a parser should be able to do. Mathematically, a parser is a function `f` that takes an `input` a recognizer `x` and an index `i` and produces an output such that:
+
 $$
 f(input, x, i) = \left\{
 	\begin{array}{ll}
-		\brace  & \mbox{if } i \gt len(input) \\
-		\mbox{i + 1} & \mbox{if } input[i] = x \\
-		\brace & \mbox{otherwise }
+		\brace  & if i \gt len(input) \\
+		i + 1 & if input[i] = x \\
+		\brace & otherwise
 	\end{array}
 \right.
 $$
 
 # The Dark Arts of Parsing
 
-By functional programming standards, we should be able to return a [result type]([Result type - Wikipedia](https://en.wikipedia.org/wiki/Result_type#:~:text=In%20functional%20programming%2C%20a%20result,value%20or%20an%20error%20code.)) from the parser function. The naive approach might be to define result as follows:
+By functional programming standards, we should be able to return a [result type type](https://en.wikipedia.org/wiki/Result_type#:~:text=In%20functional%20programming%2C%20a%20result,value%20or%20an%20error%20code.) from the parser function. The naive approach might be to define result as follows:
 
 ```go
 type Result[T any] struct {
@@ -204,7 +205,7 @@ func Map[A, B any](p Parser, mapping func(A) B) Parser {
 }
 ```
 
-I have used generics here, because this is a sort of a workaround because Go doesn't support [parameterized methods]([Type Parameters Proposal](https://go.googlesource.com/proposal/+/refs/heads/master/design/43651-type-parameters.md#No-parameterized-methods)).
+I have used generics here, because this is a sort of a workaround because Go doesn't support [parameterized methods](https://go.googlesource.com/proposal/+/refs/heads/master/design/43651-type-parameters.md#No-parameterized-methods).
 
 The next few were equally interesting:
 1. `Between` combinator. This combinator matches a parser surrounded by two others. This would later help us in matching content within parentheses, braces, or quotation marks.
