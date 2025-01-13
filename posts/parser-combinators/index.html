@@ -7,7 +7,7 @@
 <meta name="robots" content="index, follow">
 <title>Parser Combinators | The Black Buck</title>
 <meta name="keywords" content="">
-<meta name="description" content="And the advent of combinatory parsing in go">
+<meta name="description" content="and the Chamber of Functional Programming">
 <meta name="author" content="Anil Bishnoi">
 <link rel="canonical" href="https://blackbuck.github.io/posts/parser-combinators/">
 <link crossorigin="anonymous" href="/assets/css/stylesheet.d6fcd20a4fb86efa4dfac8ec95da60244cc8871042183da1ef28e3a762ad79c8.css" integrity="sha256-1vzSCk&#43;4bvpN&#43;sjsldpgJEzIhxBCGD2h7yjjp2Ktecg=" rel="preload stylesheet" as="style">
@@ -58,15 +58,15 @@
 </noscript><meta property="og:url" content="https://blackbuck.github.io/posts/parser-combinators/">
   <meta property="og:site_name" content="The Black Buck">
   <meta property="og:title" content="Parser Combinators">
-  <meta property="og:description" content="And the advent of combinatory parsing in go">
+  <meta property="og:description" content="and the Chamber of Functional Programming">
   <meta property="og:locale" content="en-us">
   <meta property="og:type" content="article">
     <meta property="article:section" content="posts">
-    <meta property="article:published_time" content="2025-01-09T00:00:00+00:00">
-    <meta property="article:modified_time" content="2025-01-09T00:00:00+00:00">
+    <meta property="article:published_time" content="2025-01-13T00:00:00+00:00">
+    <meta property="article:modified_time" content="2025-01-13T00:00:00+00:00">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Parser Combinators">
-<meta name="twitter:description" content="And the advent of combinatory parsing in go">
+<meta name="twitter:description" content="and the Chamber of Functional Programming">
 
 
 <script type="application/ld+json">
@@ -95,15 +95,15 @@
   "@type": "BlogPosting",
   "headline": "Parser Combinators",
   "name": "Parser Combinators",
-  "description": "And the advent of combinatory parsing in go",
+  "description": "and the Chamber of Functional Programming",
   "keywords": [
     
   ],
-  "articleBody": "What even are these creatures? According to wikipedia,\nA parser combinator is a higher-order function that accepts several parsers as input and returns a new parser as its output.\n",
-  "wordCount" : "29",
+  "articleBody": "The Call to Adventure Skip this if you’re here just for the parser combinattor part :)\nIf I had a list of disappointments for the year 2025, the first entry would be my college not offering the Compiler Design course in 6th semester. I mean, why shouldn’t they? So what if they’ve clearly stated in the scheme that they’ll be offering it in the 8th semester? Unable to digest the fact that I wasn’t in 8th semester already, I decided to do something myself. And so, I started learning how to make my own compiler. To my surprise, it wasn’t an easy task. Most “tutorials” on compiler design just sort of skip on the most basic phase: building a lexer and a parser. For the sake of “simplicity,” they instead focus on more important tasks at hand. It was indeed disheartening. I mean, what’s the point of learning something if I don’t even know how it is supposed to work.\nAnd so, I did. I got together a simple lexer and parser and made it to spit out a parse tree. But that was it. All that rage for nothing. A day or two later, I stumbled upon a Wikipedia article on parser combinators (I don’t know how I got there)\nIf I had a list for all the interesting things that happened to me in the year 2025, the first entry would be the discovery of parser combinators.\nThe Fundamental Spells According to Wikipedia,\nA parser combinator is a higher-order function that accepts several parsers as input and returns a new parser as its output.\nBasically, a parser combinator is a function that takes one or more functions as parameters and returns a function combining these functions. In this context, these functions are supposed to be parsers. Parser combinators are a great tool for prototyping compilers for domain-specific tasks. More of it on later sections.\nSo, before moving to combining parsers, we need to define what a parser should be able to do. Mathematically, a parser is a function f that takes an input a recognizer x and an index i and produces an output such that: $$ f(input, x, i) = \\left{ \\begin{array}{ll} \\brace \u0026 \\mbox{if } i \\gt len(input) \\ \\mbox{i + 1} \u0026 \\mbox{if } input[i] = x \\ \\brace \u0026 \\mbox{otherwise } \\end{array} \\right. $$\nThe Dark Arts of Parsing By functional programming standards, we should be able to return a [result type](Result type - Wikipedia) from the parser function. The naive approach might be to define result as follows:\ntype Result[T any] struct { parsedResult T remString string } type Parser[T any] interface { parse(string) (result[T], error) } This is what I thought as well. But the problem with defining Result and Parser with generics is that dealing with generics became a whole lot complex and was causing issues with the testing (handling [DeepEqual](reflect package - reflect - Go Packages) was a headache on its own.) There was also a different problem: I wasn’t considering the input as a state machine. Although it wasn’t that big of a performance bottleneck (I haven’t benchmarked it against the second version) but I just didn’t like passing a string around too much. I now had two problems to deal with:\nRedefine Parser and Result Implement a state machine. A State could be defined as follows:\ntype State struct { input string offset int } This implementation now had one major advantage: a separate type gave me greater freedom. I could now define helper functions maybe add a few more features for better error handling.\n// Check if there are characters available for parsing func (s State) HasAvailableChars(n int) bool {} // Consume n characters and return func (s State) Consume(n int) (string, error) {} // Peek one char -- consume without advancing func (s State) PeekChar() (byte, error) {} // Advance n places and return the next state func (s State) Advance(n int) State {} The State API was the last thing I added to this library, but for the purpose of this blog let’s assume I defined it in the beginning. So, with the State in place, I was now left with the Result and Parser types.\ntype Result struct { parsedResult interface nextState State } type Parser func(curState State) (result, error) Having the Parser type as a function would allow the combinators to be “technically” called higher-order functions. Now, all that was left was to define some basic parsers.\n// basic char parser func CharParser(c byte) Parser { return func(curState State) (Result, error) { if curState.offset \u003e= len(curState.input) { return NewResult( nil, curState, ), fmt.Errorf(\"reached the end of input string while parsing\") } if curState.input[curState.offset] != c { return NewResult( nil, curState, ), fmt.Errorf(\"expected %c but received %c\", c, curState.input[curState.offset]) } return NewResult( string(c), curState.Advance(1), ), nil } } // Parses a string exactly and advances the current State. func String(s string) Parser { return func(curState State) (Result, error) { if curState.input[curState.offset:] != s { return NewResult( nil, curState, ), fmt.Errorf(\"expected %s\", s) } return NewResult( s, curState.Advance(len(s)), ), nil } } Mastering the Dark Art of Parser Combinators Now that I had defined two of the most basic parsers, I started writing combinators. Here are a few of them:\n// Lazily perform OR between the left and right parsers func Or(left Parser, right Parser) Parser { return func(curState State) (Result, error) { leftRes, err := left(curState) if err != nil { curState = leftRes.nextState return right(curState) } return leftRes, nil } } // Lazily perform AND between the left and right parsers func And(left Parser, right Parser) Parser {} // Parse 0 or more occurence of the parser in the input/state machine func Many0(p Parser) Parser {} // Parse 1 or more occurence of the parser in the input/state machine func Many1(p Parser) Parser {} You might’ve noticed that there’s only two params in the Or and And combinators. It could benefit from multiple params, but as of now I haven’t changed them :(\nApart from the basic ones, there were some special combinators that I found really interesting. First was the Map combinator. Similar to other general-purpose programming languages, a Map combinator maps the output of a parser to a different function. The reason it is interesting is that it helps to convert a parsed string to a data type of our choice, which comes in handy in a lot of different ways.\nFor instance, if I had to write a parser that takes an input and gives me an integer, I would want a combinator such that:\ndigits := Or(CharParser('0'), CharParser('1'), ..., CharParser('9')) digitParser := Many0(digits) // a function that takes an array of strings and outputs an int func parseInt(d []string) (int, error) { res := \"\" for _, val := range d { res = res + val } return strconv.Atoi(res) } intParser := Map(digitParser, parseInt) // we need this Although we could’ve mapped it ourselves, but that would mean that we would have to repeat the same set of lines for every mapping we wanted, which violates the DRY principle. So, here’s the implementation of the Map combinator:\nfunc Map[A, B any](p Parser, mapping func(A) B) Parser { return func(curState State) (Result, error) { res, err := p(curState) if err != nil { return NewResult( nil, curState, ), err } return NewResult( mapping(res.parsedResult.(A)), res.nextState, ), nil } } I have used generics here, because this is a sort of a workaround because Go doesn’t support [parameterized methods](Type Parameters Proposal).\nThe next few were equally interesting:\nBetween combinator. This combinator matches a parser surrounded by two others. This would later help us in matching content within parentheses, braces, or quotation marks. Sequence combinator. This combinator sequentially passes the state from one parser to another, and returns a union of the parsed results if all the parsers pass. Lazy combinator. This combinator is perhaps the most important of all the combinators. It defers the creation of a parser unless required. It plays a pivotal role in parsing recursively defined parsers (more on that later). // Lazy parsing with memoization func Lazy(f func() Parser) Parser { var memo Parser return func(curState State) (Result, error) { if memo == nil { memo = f() } return memo(curState) } } // Parse the content between open and close parser func Between(open, content, close Parser) Parser { return func(curState State) (Result, error) { openRes, err := open(curState) if err != nil { return NewResult( nil, curState, ), err } contentRes, err := content(openRes.nextState) if err != nil { return NewResult( nil, curState, ), err } closeRes, err := close(contentRes.nextState) if err != nil { return NewResult( nil, curState, ), err } return NewResult( contentRes.parsedResult, closeRes.nextState, ), nil } } // Sequentially parse parsers func Seq(parsers ...Parser) Parser { return func(curState State) (Result, error) { var res []interface{} next := curState for _, parser := range parsers { x, err := parser(next) if err != nil { return NewResult( nil, curState, // fallback to the initial State ), err } res = append(res, x.parsedResult) next = x.nextState } return NewResult( res, next, ), nil } } Phew! That was indeed a LOT of work. But I was only just halfway there. The final boss was waiting for me.\nPractical Dark Arts Defense Now that I had all this set up, it was time for me to make a small DSL. For me, it was going to be a small JSON parser. A JSON can appear in various shapes:\nNumbers Strings Arrays The trickiest part - handling arrays within arrays - could now be handled easily with the help of our favorite Lazy combinator. Here’s how I crafted it: func jsonString() parser.Parser { stringChar := func() parser.Parser { return func(curState parser.State) (parser.Result, error) { c, err := curState.PeekChar() if err != nil { return parser.NewResult(nil, curState), fmt.Errorf(\"unexpected end of input\") } if c != '\"' \u0026\u0026 c != '\\\\' { return parser.NewResult( string(c), curState.Advance(1), ), nil } return parser.NewResult(nil, curState), fmt.Errorf(\"unexpected character %s\", string(c)) } } return parser.Map( parser.Between( parser.CharParser('\"'), parser.Many0(stringChar()), parser.CharParser('\"'), ), func(chars interface{}) string { var sb strings.Builder for _, c := range chars.([]interface{}) { sb.WriteString(c.(string)) } return sb.String() }, ) } // parse a json array func jsonArray() parser.Parser { return parser.Map( parser.Between( parser.Seq(parser.CharParser('['), whitespace()), parser.Many0( parser.Seq( parser.Lazy(func() parser.Parser { return jsonValue }), parser.Many0( parser.Seq( parser.CharParser(','), whitespace(), parser.Lazy(func() parser.Parser { return jsonValue }), ), ), ), ), parser.Seq(whitespace(), parser.CharParser(']')), ), func(val interface{}) []interface{} { if len(val.([]interface{})) == 0 { return []interface{}{} } result := make([]interface{}, 0) seqResults := val.([]interface{}) result = append(result, seqResults[0].([]interface{})[0]) // items of the second seq in the form [[',', ' ', jsonvalue], ...] restItems := seqResults[0].([]interface{})[1].([]interface{}) for _, item := range restItems { itemSeq := item.([]interface{}) result = append(result, itemSeq[2]) } return result }, ) } // parse the JSON func ParseJSON(input string) (interface{}, error) { jsonValue = parser.Or( parser.Or( jsonString(), jsonNumber(), ), parser.Lazy(jsonArray), ) res, err := jsonValue(parser.NewState(input, 0)) fmt.Println(res) if err != nil { return nil, err } return res, nil } func main() { // Test cases inputs := []string{ `123`, `\"Hello World\"`, `[ 1, 2, \"Hello World\" ]`, `[ 1, 2, [ 1, 3 ] ]`, `[ ]`, } fmt.Printf(\"Test cases: \\n %s\", inputs) for _, input := range inputs { result, err := ParseJSON(input) if err != nil { fmt.Printf(\"Error parsing %s: %v\\n\", input, err) continue } fmt.Printf(\"Successfully parsed %s: %v\\n\", input, result) } } Beyond the Chamber Parser combinators, although simple on their own, are really powerful tools. As Dumbledore might say, “It is not our parsing abilities that make us good programmers, but how we combine them.”\nBut, as the saying goes, with great power comes great responsibility. Parser combinators are only used in domain-specific tasks that aren’t too complex. This is because general-purpose languages are complex and they benefit from the separation of concerns provided by having a separate lexer and parser.\nLinks Parser Combinator Library JSON Parser Implementation Bonus: Lazy Evaluation- Wikipedia ",
+  "wordCount" : "1991",
   "inLanguage": "en",
-  "datePublished": "2025-01-09T00:00:00Z",
-  "dateModified": "2025-01-09T00:00:00Z",
+  "datePublished": "2025-01-13T00:00:00Z",
+  "dateModified": "2025-01-13T00:00:00Z",
   "author":{
     "@type": "Person",
     "name": "Anil Bishnoi"
@@ -175,11 +175,6 @@
                 </a>
             </li>
             <li>
-                <a href="https://blackbuck.github.io/projects" title="Projects">
-                    <span>Projects</span>
-                </a>
-            </li>
-            <li>
                 <a href="https://blackbuck.github.io/search" title="Search (Alt &#43; /)" accesskey=/>
                     <span>Search</span>
                 </a>
@@ -195,7 +190,7 @@
       Parser Combinators
     </h1>
     <div class="post-description">
-      And the advent of combinatory parsing in go
+      and the Chamber of Functional Programming
     </div>
     <div class="post-meta">
 
@@ -210,18 +205,394 @@ Anil Bishnoi
 
         <div class="inner"><ul>
                 <li>
-                    <a href="#what-even-are-these-creatures" aria-label="What even are these creatures?">What even are these creatures?</a>
+                    <a href="#the-call-to-adventure" aria-label="The Call to Adventure">The Call to Adventure</a></li>
+                <li>
+                    <a href="#the-fundamental-spells" aria-label="The Fundamental Spells">The Fundamental Spells</a></li>
+                <li>
+                    <a href="#the-dark-arts-of-parsing" aria-label="The Dark Arts of Parsing">The Dark Arts of Parsing</a></li>
+                <li>
+                    <a href="#mastering-the-dark-art-of-parser-combinators" aria-label="Mastering the Dark Art of Parser Combinators">Mastering the Dark Art of Parser Combinators</a></li>
+                <li>
+                    <a href="#practical-dark-arts-defense" aria-label="Practical Dark Arts Defense">Practical Dark Arts Defense</a></li>
+                <li>
+                    <a href="#beyond-the-chamber" aria-label="Beyond the Chamber">Beyond the Chamber</a></li>
+                <li>
+                    <a href="#links" aria-label="Links">Links</a>
                 </li>
             </ul>
         </div>
     </details>
 </div>
 
-  <div class="post-content"><h1 id="what-even-are-these-creatures">What even are these creatures?<a hidden class="anchor" aria-hidden="true" href="#what-even-are-these-creatures">#</a></h1>
-<p>According to wikipedia,</p>
+  <div class="post-content"><h1 id="the-call-to-adventure">The Call to Adventure<a hidden class="anchor" aria-hidden="true" href="#the-call-to-adventure">#</a></h1>
+<p><strong><!-- raw HTML omitted -->Skip this if you&rsquo;re here just for the parser combinattor part :)<!-- raw HTML omitted --></strong></p>
+<p>If I had a list of disappointments for the year 2025, the first entry would be my college not offering the Compiler Design course in 6th semester. I mean, why shouldn&rsquo;t they? So what if they&rsquo;ve clearly stated in the scheme that they&rsquo;ll be offering it in the 8th semester? Unable to digest the fact that I wasn&rsquo;t in 8th semester already, I decided to do something myself. And so, I started learning how to make my own compiler. To my surprise, it wasn&rsquo;t an easy task. Most &ldquo;tutorials&rdquo; on compiler design just sort of skip on the most basic phase: building a lexer and a parser. For the sake of &ldquo;simplicity,&rdquo; they instead focus on more important tasks at hand. It was indeed disheartening. I mean, what&rsquo;s the point of learning something if I don&rsquo;t even know how it is supposed to work.</p>
+<p>And so, I did. I got together a simple lexer and parser and made it to spit out a parse tree. But that was it. All that rage for nothing. A day or two later, I stumbled upon a Wikipedia article on parser combinators (I don&rsquo;t know how I got there)</p>
+<p>If I had a list for all the interesting things that happened to me in the year 2025, the first entry would be the discovery of parser combinators.</p>
+<h1 id="the-fundamental-spells">The Fundamental Spells<a hidden class="anchor" aria-hidden="true" href="#the-fundamental-spells">#</a></h1>
+<p>According to Wikipedia,</p>
 <blockquote>
-<p>A parser combinator is a higher-order function that accepts several parsers as input and returns a new parser as its output.</p>
+<p>A parser combinator is a higher-order function that accepts several parsers as input and returns a new parser as its output.</p>
 </blockquote>
+<p>Basically, a parser combinator is a function that takes one or more functions as parameters and returns a function combining these functions. In this context, these functions are supposed to be parsers. Parser combinators are a great tool for prototyping compilers for domain-specific tasks. More of it on later sections.</p>
+<p>So, before moving to combining parsers, we need to define what a parser should be able to do. Mathematically, a parser is a function <code>f</code> that takes an <code>input</code> a recognizer <code>x</code> and an index <code>i</code> and produces an output such that:
+$$
+f(input, x, i) = \left{
+\begin{array}{ll}
+\brace  &amp; \mbox{if } i \gt len(input) \
+\mbox{i + 1} &amp; \mbox{if } input[i] = x \
+\brace &amp; \mbox{otherwise }
+\end{array}
+\right.
+$$</p>
+<h1 id="the-dark-arts-of-parsing">The Dark Arts of Parsing<a hidden class="anchor" aria-hidden="true" href="#the-dark-arts-of-parsing">#</a></h1>
+<p>By functional programming standards, we should be able to return a [result type](<a href="https://en.wikipedia.org/wiki/Result_type#:~:text=In%20functional%20programming%2C%20a%20result,value%20or%20an%20error%20code.">Result type - Wikipedia</a>) from the parser function. The naive approach might be to define result as follows:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Result</span>[<span style="color:#a6e22e">T</span> <span style="color:#a6e22e">any</span>] <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">parsedResult</span>   <span style="color:#a6e22e">T</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">remString</span>      <span style="color:#66d9ef">string</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Parser</span>[<span style="color:#a6e22e">T</span> <span style="color:#a6e22e">any</span>] <span style="color:#66d9ef">interface</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">parse</span>(<span style="color:#66d9ef">string</span>) (<span style="color:#a6e22e">result</span>[<span style="color:#a6e22e">T</span>], <span style="color:#66d9ef">error</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>This is what I thought as well. But the problem with defining <code>Result</code> and <code>Parser</code> with generics is that dealing with generics became a whole lot complex and was causing issues with the testing (handling [<code>DeepEqual</code>](<a href="https://pkg.go.dev/reflect#DeepEqual">reflect package - reflect - Go Packages</a>) was a headache on its own.) There was also a different problem: I wasn&rsquo;t considering the input as a state machine. Although it wasn&rsquo;t that big of a performance bottleneck (I haven&rsquo;t benchmarked it against the second version) but I just didn&rsquo;t like passing a string around too much. I now had two problems to deal with:</p>
+<ol>
+<li>Redefine <code>Parser</code> and <code>Result</code></li>
+<li>Implement a state machine.</li>
+</ol>
+<p>A <code>State</code> could be defined as follows:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Go" data-lang="Go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">State</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">input</span>  <span style="color:#66d9ef">string</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">offset</span> <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>This implementation now had one major advantage: a separate type gave me greater freedom. I could now define helper functions maybe add a few more features for better error handling.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Go" data-lang="Go"><span style="display:flex;"><span><span style="color:#75715e">// Check if there are characters available for parsing
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">s</span> <span style="color:#a6e22e">State</span>) <span style="color:#a6e22e">HasAvailableChars</span>(<span style="color:#a6e22e">n</span> <span style="color:#66d9ef">int</span>) <span style="color:#66d9ef">bool</span> {}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Consume n characters and return
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">s</span> <span style="color:#a6e22e">State</span>) <span style="color:#a6e22e">Consume</span>(<span style="color:#a6e22e">n</span> <span style="color:#66d9ef">int</span>) (<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">error</span>) {}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Peek one char -- consume without advancing
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">s</span> <span style="color:#a6e22e">State</span>) <span style="color:#a6e22e">PeekChar</span>() (<span style="color:#66d9ef">byte</span>, <span style="color:#66d9ef">error</span>) {}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Advance n places and return the next state
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">s</span> <span style="color:#a6e22e">State</span>) <span style="color:#a6e22e">Advance</span>(<span style="color:#a6e22e">n</span> <span style="color:#66d9ef">int</span>) <span style="color:#a6e22e">State</span> {}
+</span></span></code></pre></div><p>The <code>State</code> API was the last thing I added to this library, but for the purpose of this blog let&rsquo;s assume I defined it in the beginning. So, with the State in place, I was now left with the <code>Result</code> and <code>Parser</code> types.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Go" data-lang="Go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Result</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">parsedResult</span> <span style="color:#66d9ef">interface</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">nextState</span>    <span style="color:#a6e22e">State</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Parser</span> <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">curState</span> <span style="color:#a6e22e">State</span>) (<span style="color:#a6e22e">result</span>, <span style="color:#66d9ef">error</span>)
+</span></span></code></pre></div><p>Having the <code>Parser</code> type as a function would allow the combinators to be &ldquo;technically&rdquo; called higher-order functions. Now, all that was left was to define some basic parsers.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Go" data-lang="Go"><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// basic char parser
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">CharParser</span>(<span style="color:#a6e22e">c</span> <span style="color:#66d9ef">byte</span>) <span style="color:#a6e22e">Parser</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">curState</span> <span style="color:#a6e22e">State</span>) (<span style="color:#a6e22e">Result</span>, <span style="color:#66d9ef">error</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">curState</span>.<span style="color:#a6e22e">offset</span> <span style="color:#f92672">&gt;=</span> len(<span style="color:#a6e22e">curState</span>.<span style="color:#a6e22e">input</span>) {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">NewResult</span>(
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">nil</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">curState</span>,
+</span></span><span style="display:flex;"><span>            ), <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Errorf</span>(<span style="color:#e6db74">&#34;reached the end of input string while parsing&#34;</span>)
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">curState</span>.<span style="color:#a6e22e">input</span>[<span style="color:#a6e22e">curState</span>.<span style="color:#a6e22e">offset</span>] <span style="color:#f92672">!=</span> <span style="color:#a6e22e">c</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">NewResult</span>(
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">nil</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">curState</span>,
+</span></span><span style="display:flex;"><span>            ), <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Errorf</span>(<span style="color:#e6db74">&#34;expected %c but received %c&#34;</span>, <span style="color:#a6e22e">c</span>, <span style="color:#a6e22e">curState</span>.<span style="color:#a6e22e">input</span>[<span style="color:#a6e22e">curState</span>.<span style="color:#a6e22e">offset</span>])
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">NewResult</span>(
+</span></span><span style="display:flex;"><span>            string(<span style="color:#a6e22e">c</span>),
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">curState</span>.<span style="color:#a6e22e">Advance</span>(<span style="color:#ae81ff">1</span>),
+</span></span><span style="display:flex;"><span>        ), <span style="color:#66d9ef">nil</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Parses a string exactly and advances the current State.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">String</span>(<span style="color:#a6e22e">s</span> <span style="color:#66d9ef">string</span>) <span style="color:#a6e22e">Parser</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">curState</span> <span style="color:#a6e22e">State</span>) (<span style="color:#a6e22e">Result</span>, <span style="color:#66d9ef">error</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">curState</span>.<span style="color:#a6e22e">input</span>[<span style="color:#a6e22e">curState</span>.<span style="color:#a6e22e">offset</span>:] <span style="color:#f92672">!=</span> <span style="color:#a6e22e">s</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">NewResult</span>(
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">nil</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">curState</span>,
+</span></span><span style="display:flex;"><span>            ), <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Errorf</span>(<span style="color:#e6db74">&#34;expected %s&#34;</span>, <span style="color:#a6e22e">s</span>)
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">NewResult</span>(
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">s</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">curState</span>.<span style="color:#a6e22e">Advance</span>(len(<span style="color:#a6e22e">s</span>)),
+</span></span><span style="display:flex;"><span>        ), <span style="color:#66d9ef">nil</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h1 id="mastering-the-dark-art-of-parser-combinators">Mastering the Dark Art of Parser Combinators<a hidden class="anchor" aria-hidden="true" href="#mastering-the-dark-art-of-parser-combinators">#</a></h1>
+<p>Now that I had defined two of the most basic parsers, I started writing combinators. Here are a few of them:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Go" data-lang="Go"><span style="display:flex;"><span><span style="color:#75715e">// Lazily perform OR between the left and right parsers
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">Or</span>(<span style="color:#a6e22e">left</span> <span style="color:#a6e22e">Parser</span>, <span style="color:#a6e22e">right</span> <span style="color:#a6e22e">Parser</span>) <span style="color:#a6e22e">Parser</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">curState</span> <span style="color:#a6e22e">State</span>) (<span style="color:#a6e22e">Result</span>, <span style="color:#66d9ef">error</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">leftRes</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">left</span>(<span style="color:#a6e22e">curState</span>)
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">curState</span> = <span style="color:#a6e22e">leftRes</span>.<span style="color:#a6e22e">nextState</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">right</span>(<span style="color:#a6e22e">curState</span>)
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">leftRes</span>, <span style="color:#66d9ef">nil</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Lazily perform AND between the left and right parsers
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">And</span>(<span style="color:#a6e22e">left</span> <span style="color:#a6e22e">Parser</span>, <span style="color:#a6e22e">right</span> <span style="color:#a6e22e">Parser</span>) <span style="color:#a6e22e">Parser</span> {}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Parse 0 or more occurence of the parser in the input/state machine
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">Many0</span>(<span style="color:#a6e22e">p</span> <span style="color:#a6e22e">Parser</span>) <span style="color:#a6e22e">Parser</span> {}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Parse 1 or more occurence of the parser in the input/state machine
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">Many1</span>(<span style="color:#a6e22e">p</span> <span style="color:#a6e22e">Parser</span>) <span style="color:#a6e22e">Parser</span> {}
+</span></span></code></pre></div><p>You might&rsquo;ve noticed that there&rsquo;s only two params in the <code>Or</code> and <code>And</code> combinators. It could benefit from multiple params, but as of now I haven&rsquo;t changed them :(</p>
+<p>Apart from the basic ones, there were some special combinators that I found really interesting. First was the <code>Map</code> combinator. Similar to other general-purpose programming languages, a <code>Map</code> combinator maps the output of a parser to a different function. The reason it is interesting is that it helps to convert a parsed string to a data type of our choice, which comes in handy in a lot of different ways.</p>
+<p>For instance, if I had to write a parser that takes an input and gives me an integer, I would want a combinator such that:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Go" data-lang="Go"><span style="display:flex;"><span><span style="color:#a6e22e">digits</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">Or</span>(<span style="color:#a6e22e">CharParser</span>(<span style="color:#e6db74">&#39;0&#39;</span>), <span style="color:#a6e22e">CharParser</span>(<span style="color:#e6db74">&#39;1&#39;</span>), <span style="color:#f92672">...</span>, <span style="color:#a6e22e">CharParser</span>(<span style="color:#e6db74">&#39;9&#39;</span>))
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">digitParser</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">Many0</span>(<span style="color:#a6e22e">digits</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// a function that takes an array of strings and outputs an int
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">parseInt</span>(<span style="color:#a6e22e">d</span> []<span style="color:#66d9ef">string</span>) (<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">error</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">res</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">val</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">d</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">res</span> = <span style="color:#a6e22e">res</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">val</span>
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">strconv</span>.<span style="color:#a6e22e">Atoi</span>(<span style="color:#a6e22e">res</span>)
+</span></span><span style="display:flex;"><span>} 
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">intParser</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">Map</span>(<span style="color:#a6e22e">digitParser</span>, <span style="color:#a6e22e">parseInt</span>) <span style="color:#75715e">// we need this
+</span></span></span></code></pre></div><p>Although we could&rsquo;ve mapped it ourselves, but that would mean that we would have to repeat the same set of lines for every mapping we wanted, which violates the DRY principle. So, here&rsquo;s the implementation of the <code>Map</code> combinator:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Go" data-lang="Go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">Map</span>[<span style="color:#a6e22e">A</span>, <span style="color:#a6e22e">B</span> <span style="color:#a6e22e">any</span>](<span style="color:#a6e22e">p</span> <span style="color:#a6e22e">Parser</span>, <span style="color:#a6e22e">mapping</span> <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">A</span>) <span style="color:#a6e22e">B</span>) <span style="color:#a6e22e">Parser</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">curState</span> <span style="color:#a6e22e">State</span>) (<span style="color:#a6e22e">Result</span>, <span style="color:#66d9ef">error</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">res</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">p</span>(<span style="color:#a6e22e">curState</span>)
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">NewResult</span>(
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">nil</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">curState</span>,
+</span></span><span style="display:flex;"><span>            ), <span style="color:#a6e22e">err</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">NewResult</span>(
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">mapping</span>(<span style="color:#a6e22e">res</span>.<span style="color:#a6e22e">parsedResult</span>.(<span style="color:#a6e22e">A</span>)),
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">res</span>.<span style="color:#a6e22e">nextState</span>,
+</span></span><span style="display:flex;"><span>        ), <span style="color:#66d9ef">nil</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>I have used generics here, because this is a sort of a workaround because Go doesn&rsquo;t support [parameterized methods](<a href="https://go.googlesource.com/proposal/+/refs/heads/master/design/43651-type-parameters.md#No-parameterized-methods">Type Parameters Proposal</a>).</p>
+<p>The next few were equally interesting:</p>
+<ol>
+<li><code>Between</code> combinator. This combinator matches a parser surrounded by two others. This would later help us in matching content within parentheses, braces, or quotation marks.</li>
+<li><code>Sequence</code> combinator. This combinator sequentially passes the state from one parser to another, and returns a <code>union</code> of the parsed results if <strong>all</strong> the parsers pass.</li>
+<li><code>Lazy</code> combinator. This combinator is perhaps the most important of all the combinators. It defers the creation of a parser unless required. It plays a pivotal role in parsing recursively defined parsers (more on that later).</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Go" data-lang="Go"><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Lazy parsing with memoization
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">Lazy</span>(<span style="color:#a6e22e">f</span> <span style="color:#66d9ef">func</span>() <span style="color:#a6e22e">Parser</span>) <span style="color:#a6e22e">Parser</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">memo</span> <span style="color:#a6e22e">Parser</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">curState</span> <span style="color:#a6e22e">State</span>) (<span style="color:#a6e22e">Result</span>, <span style="color:#66d9ef">error</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">memo</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">memo</span> = <span style="color:#a6e22e">f</span>()
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">memo</span>(<span style="color:#a6e22e">curState</span>)
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Parse the content between open and close parser
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">Between</span>(<span style="color:#a6e22e">open</span>, <span style="color:#a6e22e">content</span>, <span style="color:#a6e22e">close</span> <span style="color:#a6e22e">Parser</span>) <span style="color:#a6e22e">Parser</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">curState</span> <span style="color:#a6e22e">State</span>) (<span style="color:#a6e22e">Result</span>, <span style="color:#66d9ef">error</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">openRes</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">open</span>(<span style="color:#a6e22e">curState</span>)
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">NewResult</span>(
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">nil</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">curState</span>,
+</span></span><span style="display:flex;"><span>            ), <span style="color:#a6e22e">err</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">contentRes</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">content</span>(<span style="color:#a6e22e">openRes</span>.<span style="color:#a6e22e">nextState</span>)
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">NewResult</span>(
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">nil</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">curState</span>,
+</span></span><span style="display:flex;"><span>            ), <span style="color:#a6e22e">err</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">closeRes</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> close(<span style="color:#a6e22e">contentRes</span>.<span style="color:#a6e22e">nextState</span>)
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">NewResult</span>(
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">nil</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">curState</span>,
+</span></span><span style="display:flex;"><span>            ), <span style="color:#a6e22e">err</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">NewResult</span>(
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">contentRes</span>.<span style="color:#a6e22e">parsedResult</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">closeRes</span>.<span style="color:#a6e22e">nextState</span>,
+</span></span><span style="display:flex;"><span>        ), <span style="color:#66d9ef">nil</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Sequentially parse parsers
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">Seq</span>(<span style="color:#a6e22e">parsers</span> <span style="color:#f92672">...</span><span style="color:#a6e22e">Parser</span>) <span style="color:#a6e22e">Parser</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">curState</span> <span style="color:#a6e22e">State</span>) (<span style="color:#a6e22e">Result</span>, <span style="color:#66d9ef">error</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">res</span> []<span style="color:#66d9ef">interface</span>{}
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">next</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">curState</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">parser</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">parsers</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">x</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">parser</span>(<span style="color:#a6e22e">next</span>)
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">NewResult</span>(
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">nil</span>,
+</span></span><span style="display:flex;"><span>                    <span style="color:#a6e22e">curState</span>, <span style="color:#75715e">// fallback to the initial State
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>                ), <span style="color:#a6e22e">err</span>
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">res</span> = append(<span style="color:#a6e22e">res</span>, <span style="color:#a6e22e">x</span>.<span style="color:#a6e22e">parsedResult</span>)
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">next</span> = <span style="color:#a6e22e">x</span>.<span style="color:#a6e22e">nextState</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">NewResult</span>(
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">res</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">next</span>,
+</span></span><span style="display:flex;"><span>        ), <span style="color:#66d9ef">nil</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>Phew! That was indeed a LOT of work. But I was only just halfway there. The final boss was waiting for me.</p>
+<h1 id="practical-dark-arts-defense">Practical Dark Arts Defense<a hidden class="anchor" aria-hidden="true" href="#practical-dark-arts-defense">#</a></h1>
+<p>Now that I had all this set up, it was time for me to make a small DSL. For me, it was going to be a small JSON parser. A JSON can appear in various shapes:</p>
+<ul>
+<li>Numbers</li>
+<li>Strings</li>
+<li>Arrays
+The trickiest part - handling arrays within arrays - could now be handled easily with the help of our favorite <code>Lazy</code> combinator. Here&rsquo;s how I crafted it:</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Go" data-lang="Go"><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">jsonString</span>() <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Parser</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">stringChar</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">func</span>() <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Parser</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">curState</span> <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">State</span>) (<span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Result</span>, <span style="color:#66d9ef">error</span>) {
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">c</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">curState</span>.<span style="color:#a6e22e">PeekChar</span>()
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">NewResult</span>(<span style="color:#66d9ef">nil</span>, <span style="color:#a6e22e">curState</span>), <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Errorf</span>(<span style="color:#e6db74">&#34;unexpected end of input&#34;</span>)
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">c</span> <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#39;&#34;&#39;</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">c</span> <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#39;\\&#39;</span> {
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">NewResult</span>(
+</span></span><span style="display:flex;"><span>                    string(<span style="color:#a6e22e">c</span>),
+</span></span><span style="display:flex;"><span>                    <span style="color:#a6e22e">curState</span>.<span style="color:#a6e22e">Advance</span>(<span style="color:#ae81ff">1</span>),
+</span></span><span style="display:flex;"><span>                ), <span style="color:#66d9ef">nil</span>
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">NewResult</span>(<span style="color:#66d9ef">nil</span>, <span style="color:#a6e22e">curState</span>), <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Errorf</span>(<span style="color:#e6db74">&#34;unexpected character %s&#34;</span>, string(<span style="color:#a6e22e">c</span>))
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Map</span>(
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Between</span>(
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">CharParser</span>(<span style="color:#e6db74">&#39;&#34;&#39;</span>),
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Many0</span>(<span style="color:#a6e22e">stringChar</span>()),
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">CharParser</span>(<span style="color:#e6db74">&#39;&#34;&#39;</span>),
+</span></span><span style="display:flex;"><span>        ),
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">chars</span> <span style="color:#66d9ef">interface</span>{}) <span style="color:#66d9ef">string</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">sb</span> <span style="color:#a6e22e">strings</span>.<span style="color:#a6e22e">Builder</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">c</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">chars</span>.([]<span style="color:#66d9ef">interface</span>{}) {
+</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">sb</span>.<span style="color:#a6e22e">WriteString</span>(<span style="color:#a6e22e">c</span>.(<span style="color:#66d9ef">string</span>))
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">sb</span>.<span style="color:#a6e22e">String</span>()
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>    )
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// parse a json array
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">jsonArray</span>() <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Parser</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Map</span>(
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Between</span>(
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Seq</span>(<span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">CharParser</span>(<span style="color:#e6db74">&#39;[&#39;</span>), <span style="color:#a6e22e">whitespace</span>()),
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Many0</span>(
+</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Seq</span>(
+</span></span><span style="display:flex;"><span>                    <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Lazy</span>(<span style="color:#66d9ef">func</span>() <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Parser</span> { <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">jsonValue</span> }),
+</span></span><span style="display:flex;"><span>                    <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Many0</span>(
+</span></span><span style="display:flex;"><span>                        <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Seq</span>(
+</span></span><span style="display:flex;"><span>                            <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">CharParser</span>(<span style="color:#e6db74">&#39;,&#39;</span>),
+</span></span><span style="display:flex;"><span>                            <span style="color:#a6e22e">whitespace</span>(),
+</span></span><span style="display:flex;"><span>                            <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Lazy</span>(<span style="color:#66d9ef">func</span>() <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Parser</span> { <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">jsonValue</span> }),
+</span></span><span style="display:flex;"><span>                        ),
+</span></span><span style="display:flex;"><span>                    ),
+</span></span><span style="display:flex;"><span>                ),
+</span></span><span style="display:flex;"><span>            ),
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Seq</span>(<span style="color:#a6e22e">whitespace</span>(), <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">CharParser</span>(<span style="color:#e6db74">&#39;]&#39;</span>)),
+</span></span><span style="display:flex;"><span>        ),
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">val</span> <span style="color:#66d9ef">interface</span>{}) []<span style="color:#66d9ef">interface</span>{} {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> len(<span style="color:#a6e22e">val</span>.([]<span style="color:#66d9ef">interface</span>{})) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span> {
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">return</span> []<span style="color:#66d9ef">interface</span>{}{}
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">result</span> <span style="color:#f92672">:=</span> make([]<span style="color:#66d9ef">interface</span>{}, <span style="color:#ae81ff">0</span>)
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">seqResults</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">val</span>.([]<span style="color:#66d9ef">interface</span>{})
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">result</span> = append(<span style="color:#a6e22e">result</span>, <span style="color:#a6e22e">seqResults</span>[<span style="color:#ae81ff">0</span>].([]<span style="color:#66d9ef">interface</span>{})[<span style="color:#ae81ff">0</span>])
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// items of the second seq in the form [[&#39;,&#39;, &#39; &#39;, jsonvalue], ...]
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            <span style="color:#a6e22e">restItems</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">seqResults</span>[<span style="color:#ae81ff">0</span>].([]<span style="color:#66d9ef">interface</span>{})[<span style="color:#ae81ff">1</span>].([]<span style="color:#66d9ef">interface</span>{})
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">item</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">restItems</span> {
+</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">itemSeq</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">item</span>.([]<span style="color:#66d9ef">interface</span>{})
+</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">result</span> = append(<span style="color:#a6e22e">result</span>, <span style="color:#a6e22e">itemSeq</span>[<span style="color:#ae81ff">2</span>])
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">result</span>
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>    )
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//  parse the JSON
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">ParseJSON</span>(<span style="color:#a6e22e">input</span> <span style="color:#66d9ef">string</span>) (<span style="color:#66d9ef">interface</span>{}, <span style="color:#66d9ef">error</span>) {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">jsonValue</span> = <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Or</span>(
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Or</span>(
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">jsonString</span>(),
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">jsonNumber</span>(),
+</span></span><span style="display:flex;"><span>        ),
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">Lazy</span>(<span style="color:#a6e22e">jsonArray</span>),
+</span></span><span style="display:flex;"><span>    )
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">res</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">jsonValue</span>(<span style="color:#a6e22e">parser</span>.<span style="color:#a6e22e">NewState</span>(<span style="color:#a6e22e">input</span>, <span style="color:#ae81ff">0</span>))
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">res</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>, <span style="color:#a6e22e">err</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">res</span>, <span style="color:#66d9ef">nil</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// Test cases
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">inputs</span> <span style="color:#f92672">:=</span> []<span style="color:#66d9ef">string</span>{
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">`123`</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">`&#34;Hello World&#34;`</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">`[ 1, 2, &#34;Hello World&#34; ]`</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">`[ 1, 2, [ 1, 3 ] ]`</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">`[ ]`</span>,
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Test cases: \n %s&#34;</span>, <span style="color:#a6e22e">inputs</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">input</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">inputs</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">result</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">ParseJSON</span>(<span style="color:#a6e22e">input</span>)
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Error parsing %s: %v\n&#34;</span>, <span style="color:#a6e22e">input</span>, <span style="color:#a6e22e">err</span>)
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">continue</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Successfully parsed %s: %v\n&#34;</span>, <span style="color:#a6e22e">input</span>, <span style="color:#a6e22e">result</span>)
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h1 id="beyond-the-chamber">Beyond the Chamber<a hidden class="anchor" aria-hidden="true" href="#beyond-the-chamber">#</a></h1>
+<p>Parser combinators, although simple on their own, are really powerful tools. As Dumbledore might say, &ldquo;It is not our parsing abilities that make us good programmers, but how we combine them.&rdquo;</p>
+<p>But, as the saying goes, with great power comes great responsibility. Parser combinators are only used in domain-specific tasks that aren&rsquo;t too complex. This is because general-purpose languages are complex and they benefit from the separation of concerns provided by having a separate lexer and parser.</p>
+<h1 id="links">Links<a hidden class="anchor" aria-hidden="true" href="#links">#</a></h1>
+<ul>
+<li><a href="https://github.com/BlackBuck/pcom-go">Parser Combinator Library</a></li>
+<li><a href="https://github.com/BlackBuck/gopi">JSON Parser Implementation</a></li>
+<li>Bonus: <a href="https://en.wikipedia.org/wiki/Lazy_evaluation">Lazy Evaluation- Wikipedia</a></li>
+</ul>
 
 
   </div>
